@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import api from './axios';
 
 // Basic interface for data object (types)
 interface DataType {
@@ -10,16 +9,25 @@ interface DataType {
 
 function App() {
   const [data, setData] = useState<DataType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string>();
 
   useEffect(() => {
-    const fetchData = async () => {
+    setIsLoading(true);
+
+    const fetchData = async () => {      
       try {
-        const response = await fetch(`${API_BASE_URL}/api/v3/publicholidays/2025/ZA`);
-        const result = await response.json();
-        console.log(result);
-        setData(result);
+        const response = await api.get("/api/v3/publicholidays/2025/ZA");
+        setData(response.data);
       } catch (error) {
         console.error("Error fetching data:", error);
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError("An unknown error occurred");
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -30,9 +38,17 @@ function App() {
     <>
       <h1>Data returned from API:</h1>
       
-      {data.map((item, index) => (
-        <p key={index}>Public holiday <strong>{item.name}</strong> happens on <strong>{item.date}</strong></p>
-      ))}
+      {isLoading ? (
+        <p>Loading...</p>
+      ) : (
+        error ? (
+          <p><strong>Error:</strong> {error}</p>
+        ) : (
+          data.map((item, index) => (
+            <p key={index}>Public holiday <strong>{item.name}</strong> happens on <strong>{item.date}</strong></p>
+          ))
+        )
+      )}
     </>
   );
 }
